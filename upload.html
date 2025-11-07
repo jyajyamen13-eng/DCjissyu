@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word文書アップロード - 実習計画書</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Word文書アップロード</h1>
+            <div class="action-buttons no-print">
+                <button onclick="location.href='index.html'" class="btn btn-secondary">📝 フォームに戻る</button>
+            </div>
+        </header>
+
+        <section class="section">
+            <h2>実習計画書 Word文書 (.docx) をアップロード</h2>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📤</div>
+                <h3>ここにファイルをドラッグ&ドロップ</h3>
+                <p>または</p>
+                <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                    ファイルを選択
+                </button>
+                <input type="file" id="fileInput" accept=".docx" style="display: none;" onchange="handleFile(this.files[0])">
+                <p class="file-info">対応形式: .docx（Microsoft Word文書）</p>
+            </div>
+
+            <div id="progressArea" style="display: none; margin-top: 20px;">
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <p id="progressText" style="text-align: center; margin-top: 10px;">処理中...</p>
+            </div>
+
+            <div id="previewArea" style="display: none; margin-top: 20px;">
+                <h3>抽出されたデータのプレビュー</h3>
+                <div id="previewContent" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="applyToForm()">✅ フォームに適用</button>
+                    <button class="btn btn-secondary" onclick="resetUpload()">🔄 やり直す</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>📋 機能説明</h2>
+            <ul style="line-height: 2; color: #333;">
+                <li>✅ Word文書から実習計画書のデータを自動抽出</li>
+                <li>✅ 利用者名を自動的にイニシャルに変換（プライバシー保護）</li>
+                <li>✅ 日付、電話番号、メールアドレスを自動認識</li>
+                <li>✅ フォームに自動入力して編集可能</li>
+                <li>✅ PDF出力やデータ保存も可能</li>
+            </ul>
+        </section>
+
+        <footer class="footer no-print">
+            <p>ディーキャリアいわて・盛岡オフィス</p>
+            <p>TEL: 019-651-7380 / Email: iwate-morioka@dd-career.com</p>
+        </footer>
+    </div>
+
+    <script>
+        let extractedData = {};
+        let fileName = '';
+
+        // ドラッグ&ドロップ機能
+        const uploadArea = document.getElementById('uploadArea');
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#667eea';
+            uploadArea.style.background = 'rgba(102, 126, 234, 0.1)';
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = 'white';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ddd';
+            uploadArea.style.background = 'white';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // ファイル処理
+        function handleFile(file) {
+            if (!file) return;
+
+            if (!file.name.endsWith('.docx')) {
+                alert('⚠️ .docx形式のファイルを選択してください');
+                return;
+            }
+
+            fileName = file.name;
+            showProgress('ファイルを読み込み中...');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                parseDocx(e.target.result);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Word文書の解析
+        async function parseDocx(arrayBuffer) {
+            try {
+                showProgress('Word文書を解析中...');
+
+                const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+                const text = result.value;
+
+                extractedData = extractDataFromText(text);
+                
+                showProgress('データを処理中...');
+                setTimeout(() => {
+                    showPreview(extractedData);
+                    hideProgress();
+                }, 500);
+
+            } catch (error) {
+                console.error('解析エラー:', error);
+                alert('⚠️ ファイルの解析に失敗しました: ' + error.message);
+                hideProgress();
+            }
+        }
+
+        // テキストからデータ抽出
+        function extractDataFromText(text) {
+            const data = {};
+
+            // 利用者名の抽出とイニシャル変換
+            const nameMatch = text.match(/利用者名[：:\s]*([^\s\n]+)/);
+            if (nameMatch) {
+                data.userName = convertToInitials(nameMatch[1]);
+            }
+
+            // 生年月日
+            const birthMatch = text.match(/生年月日[：:\s]*(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
+            if (birthMatch) {
+                data.birthDate = `${birthMatch[1]}-${birthMatch[2].padStart(2, '0')}-${birthMatch[3].padStart(2, '0')}`;
+            }
+
+            // 性別
+            if (text.includes('男性')) data.gender = '男性';
+            else if (text.includes('女性')) data.gender = '女性';
+
+            // 通所開始日
+            const startMatch = text.match(/通所開始日[：:\s]*(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
+            if (startMatch) {
+                data.startDate = `${startMatch[1]}-${startMatch[2].padStart(2, '0')}-${startMatch[3].padStart(2, '0')}`;
+            }
+
+            // 企業名
+            const companyMatch = text.match(/(?:実習先|企業名)[：:\s]*([^\n]+)/);
+            if (companyMatch) {
+                data.companyName = companyMatch[1].trim();
+            }
+
+            // 実習期間
+            const periodMatch = text.match(/実習期間[：:\s]*(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})[^\d]*(\d{4})[年\/\-](\d{1,2})[月\/\-](\d{1,2})/);
+            if (periodMatch) {
+                data.internshipStart = `${periodMatch[1]}-${periodMatch[2].padStart(2, '0')}-${periodMatch[3].padStart(2, '0')}`;
+                data.internshipEnd = `${periodMatch[4]}-${periodMatch[5].padStart(2, '0')}-${periodMatch[6].padStart(2, '0')}`;
+            }
+
+            // 実習時間
+            const timeMatch = text.match(/実習時間[：:\s]*(\d{1,2})[：:](\d{2})[^\d]*(\d{1,2})[：:](\d{2})/);
+            if (timeMatch) {
+                data.timeStart = `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+                data.timeEnd = `${timeMatch[3].padStart(2, '0')}:${timeMatch[4]}`;
+            }
+
+            // 電話番号
+            const phoneMatch = text.match(/(\d{2,4}[-\s]?\d{2,4}[-\s]?\d{4})/);
+            if (phoneMatch) {
+                data.phone = phoneMatch[1];
+            }
+
+            // メールアドレス
+            const emailMatch = text.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+            if (emailMatch) {
+                data.email = emailMatch[1];
+            }
+
+            // 実習内容
+            const contentMatch = text.match(/実習内容[：:\s]*([^\n]+(?:\n[^\n]+)*?)(?=\n\n|$)/);
+            if (contentMatch) {
+                data.internshipContent = contentMatch[1].trim();
+            }
+
+            // 実習目標
+            const goalsMatch = text.match(/実習目標[：:\s]*([^\n]+(?:\n[^\n]+)*?)(?=\n\n|$)/);
+            if (goalsMatch) {
+                data.goals = goalsMatch[1].trim();
+            }
+
+            return data;
+        }
+
+        // イニシャル変換関数
+        function convertToInitials(name) {
+            name = name.trim();
+            
+            // 日本語名の処理（漢字、ひらがな、カタカナ）
+            if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(name)) {
+                // スペースで分割
+                const parts = name.split(/\s+/);
+                return parts.map(part => part.charAt(0) + '.').join('');
+            }
+            
+            // 英語名の処理
+            else if (/^[A-Za-z\s]+$/.test(name)) {
+                const parts = name.split(/\s+/);
+                return parts.map(part => part.charAt(0).toUpperCase() + '.').join('');
+            }
+            
+            // その他の場合はそのまま返す
+            return name;
+        }
+
+        // プレビュー表示
+        function showPreview(data) {
+            const previewContent = document.getElementById('previewContent');
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            
+            const labels = {
+                userName: '利用者名（イニシャル）',
+                birthDate: '生年月日',
+                gender: '性別',
+                startDate: '通所開始日',
+                companyName: '実習先企業名',
+                internshipStart: '実習開始日',
+                internshipEnd: '実習終了日',
+                timeStart: '実習開始時刻',
+                timeEnd: '実習終了時刻',
+                phone: '電話番号',
+                email: 'メールアドレス',
+                internshipContent: '実習内容',
+                goals: '実習目標'
+            };
+
+            for (const [key, value] of Object.entries(data)) {
+                if (value) {
+                    html += `
+                        <tr style="border-bottom: 1px solid #eee;">
+                            <td style="padding: 10px; font-weight: bold; width: 200px; background: #f5f5f5;">${labels[key] || key}</td>
+                            <td style="padding: 10px;">${value}</td>
+                        </tr>
+                    `;
+                }
+            }
+
+            html += '</table>';
+            previewContent.innerHTML = html;
+            
+            document.getElementById('uploadArea').style.display = 'none';
+            document.getElementById('previewArea').style.display = 'block';
+        }
+
+        // フォームに適用
+        function applyToForm() {
+            // データをローカルストレージに保存
+            localStorage.setItem('formData', JSON.stringify(extractedData));
+            localStorage.setItem('uploadedFileName', fileName);
+            
+            // フォームページに遷移（自動読み込みフラグ付き）
+            window.location.href = 'index.html?autoload=true';
+        }
+
+        // リセット
+        function resetUpload() {
+            document.getElementById('uploadArea').style.display = 'block';
+            document.getElementById('previewArea').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            extractedData = {};
+            fileName = '';
+        }
+
+        // プログレス表示
+        function showProgress(message) {
+            document.getElementById('progressText').textContent = message;
+            document.getElementById('progressArea').style.display = 'block';
+            document.getElementById('uploadArea').style.opacity = '0.5';
+        }
+
+        function hideProgress() {
+            document.getElementById('progressArea').style.display = 'none';
+            document.getElementById('uploadArea').style.opacity = '1';
+        }
+
+        // エラー表示
+        function showError(message) {
+            const errorMessage = document.createElement('div');
+            errorMessage.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #f44336;
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 9999;
+                max-width: 400px;
+            `;
+            errorMessage.innerHTML = `<strong>❌ エラー</strong><br>${message}`;
+            document.body.appendChild(errorMessage);
+
+            setTimeout(() => {
+                errorMessage.remove();
+            }, 5000);
+        }
+    </script>
+
+    <style>
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .file-info {
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            width: 0%;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 100%; }
+            100% { width: 0%; }
+        }
+    </style>
+</body>
+</html>

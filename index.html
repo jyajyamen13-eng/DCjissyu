@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>障害者雇用実習計画書（企業提出用）</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>障害者雇用実習計画書（企業提出用）</h1>
+            <div class="action-buttons no-print">
+                <button onclick="location.href='upload.html'" class="btn" style="background: #FF9800; color: white;">📤 Word読込</button>
+                <button onclick="printForm()" class="btn btn-primary">📄 PDF出力</button>
+                <button onclick="saveData()" class="btn btn-secondary">💾 データ保存</button>
+                <button onclick="loadData()" class="btn btn-secondary">📂 データ読込</button>
+                <button onclick="clearForm()" class="btn btn-danger">🗑️ クリア</button>
+            </div>
+        </header>
+
+        <form id="internshipForm">
+            <!-- 基本情報 -->
+            <section class="section">
+                <h2>基本情報</h2>
+                <table class="form-table">
+                    <tr>
+                        <th>利用者名</th>
+                        <td><input type="text" id="userName" name="userName" required></td>
+                        <th>生年月日</th>
+                        <td>
+                            <input type="date" id="birthDate" name="birthDate" onchange="calculateAge()" required>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>年齢</th>
+                        <td><input type="text" id="age" name="age" readonly></td>
+                        <th>性別</th>
+                        <td>
+                            <label><input type="radio" name="gender" value="男性"> 男性</label>
+                            <label><input type="radio" name="gender" value="女性"> 女性</label>
+                            <label><input type="radio" name="gender" value="その他"> その他</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>通所開始日</th>
+                        <td>
+                            <input type="date" id="startDate" name="startDate" onchange="calculateMonths()" required>
+                        </td>
+                        <th>在籍月数</th>
+                        <td><input type="text" id="months" name="months" readonly></td>
+                    </tr>
+                    <tr>
+                        <th>障害種別</th>
+                        <td colspan="3">
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" name="disability" value="身体障害"> 身体障害</label>
+                                <label><input type="checkbox" name="disability" value="知的障害"> 知的障害</label>
+                                <label><input type="checkbox" name="disability" value="精神障害"> 精神障害</label>
+                                <label><input type="checkbox" name="disability" value="発達障害"> 発達障害</label>
+                                <label><input type="checkbox" name="disability" value="その他"> その他</label>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>手帳</th>
+                        <td colspan="3">
+                            <div class="checkbox-group">
+                                <label><input type="checkbox" name="certificate" value="身体障害者手帳"> 身体障害者手帳</label>
+                                <label><input type="checkbox" name="certificate" value="療育手帳"> 療育手帳</label>
+                                <label><input type="checkbox" name="certificate" value="精神障害者保健福祉手帳"> 精神障害者保健福祉手帳</label>
+                                <label><input type="checkbox" name="certificate" value="なし"> なし</label>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- 実習情報 -->
+            <section class="section">
+                <h2>実習情報</h2>
+                <table class="form-table">
+                    <tr>
+                        <th>実習先企業名</th>
+                        <td colspan="3"><input type="text" id="companyName" name="companyName" required></td>
+                    </tr>
+                    <tr>
+                        <th>実習期間</th>
+                        <td>
+                            <input type="date" id="internshipStart" name="internshipStart" required>
+                            <span> ～ </span>
+                            <input type="date" id="internshipEnd" name="internshipEnd" required>
+                        </td>
+                        <th>実習日数</th>
+                        <td><input type="number" id="internshipDays" name="internshipDays" min="1"> 日間</td>
+                    </tr>
+                    <tr>
+                        <th>実習時間</th>
+                        <td colspan="3">
+                            <input type="time" id="timeStart" name="timeStart" required>
+                            <span> ～ </span>
+                            <input type="time" id="timeEnd" name="timeEnd" required>
+                            <span style="margin-left: 10px;">休憩時間：</span>
+                            <input type="text" id="breakTime" name="breakTime" placeholder="60分"> 分
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>実習内容</th>
+                        <td colspan="3">
+                            <textarea id="internshipContent" name="internshipContent" rows="4" required></textarea>
+                        </td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- 目標と配慮事項 -->
+            <section class="section">
+                <h2>目標と配慮事項</h2>
+                <table class="form-table">
+                    <tr>
+                        <th>実習目標</th>
+                        <td colspan="3">
+                            <textarea id="goals" name="goals" rows="4" required></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>配慮事項</th>
+                        <td colspan="3">
+                            <textarea id="considerations" name="considerations" rows="4"></textarea>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>特記事項</th>
+                        <td colspan="3">
+                            <textarea id="notes" name="notes" rows="3"></textarea>
+                        </td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- 連絡先 -->
+            <section class="section">
+                <h2>事業所連絡先</h2>
+                <table class="form-table">
+                    <tr>
+                        <th>事業所名</th>
+                        <td colspan="3">
+                            <input type="text" id="officeName" name="officeName" value="ディーキャリアいわて・盛岡オフィス">
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>担当者名</th>
+                        <td><input type="text" id="staffName" name="staffName"></td>
+                        <th>電話番号</th>
+                        <td><input type="tel" id="phone" name="phone" value="019-651-7380"></td>
+                    </tr>
+                    <tr>
+                        <th>メールアドレス</th>
+                        <td colspan="3">
+                            <input type="email" id="email" name="email" value="iwate-morioka@dd-career.com">
+                        </td>
+                    </tr>
+                </table>
+            </section>
+
+            <!-- 緊急連絡先 -->
+            <section class="section">
+                <h2>緊急連絡先</h2>
+                <table class="form-table">
+                    <tr>
+                        <th>緊急連絡先</th>
+                        <td><input type="text" id="emergencyContact" name="emergencyContact"></td>
+                        <th>続柄</th>
+                        <td><input type="text" id="relationship" name="relationship"></td>
+                    </tr>
+                    <tr>
+                        <th>電話番号</th>
+                        <td colspan="3"><input type="tel" id="emergencyPhone" name="emergencyPhone"></td>
+                    </tr>
+                </table>
+            </section>
+        </form>
+
+        <footer class="footer no-print">
+            <p>ディーキャリアいわて・盛岡オフィス</p>
+            <p>〒020-0034 岩手県盛岡市盛岡駅前通15-5 ワールドインGENプラザ4階</p>
+            <p>TEL: 019-651-7380 / Email: iwate-morioka@dd-career.com</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
